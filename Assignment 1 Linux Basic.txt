@@ -1,0 +1,42 @@
+
+# Task 1: Creating and Renaming Files/Directories
+echo "=== Task 1: Creating and Renaming Files/Directories ==="
+mkdir test_dir
+cd test_dir
+touch example.txt
+mv example.txt renamed_example.txt
+cd ..
+
+# Task 2: Viewing File Contents
+echo -e "\n=== Task 2: Viewing File Contents ==="
+echo "First 5 lines of /etc/passwd:"
+head -n 5 /etc/passwd
+echo -e "\nLast 5 lines of /etc/passwd:"
+tail -n 5 /etc/passwd
+
+# Task 3: Searching for Patterns
+echo -e "\n=== Task 3: Searching for Patterns ==="
+grep "root" /etc/passwd
+
+# Task 4: Zipping and Unzipping
+echo -e "\n=== Task 4: Zipping and Unzipping ==="
+zip -r test_dir.zip test_dir
+unzip test_dir.zip -d unzipped_dir
+
+# Task 5: Downloading Files
+echo -e "\n=== Task 5: Downloading Files ==="
+wget https://example.com/sample.txt
+
+# Task 6: Changing Permissions
+echo -e "\n=== Task 6: Changing Permissions ==="
+touch secure.txt
+chmod 444 secure.txt
+ls -l secure.txt
+
+# Task 7: Working with Environment Variables
+echo -e "\n=== Task 7: Working with Environment Variables ==="
+export MY_VAR="Hello, Linux!"
+echo $MY_VAR
+
+echo -e "\nAll tasks completed!"
+
