@@ -1,0 +1,42 @@
+def main():
+    """Main function to run all programs"""
+    while True:
+        print("\n" + "="*50)
+        print("           PYTHON PROGRAMS MENU")
+        print("="*50)
+        print("1. Grade Checker")
+        print("2. Student Grades Management")
+        print("3. Write to File")
+        print("4. Read from File")
+        print("5. Exit")
+        print("="*50)
+        
+        choice = input("Enter your choice (1-5): ")
+        
+        if choice == '1':
+            print("\n--- Grade Checker ---")
+            grade_checker()
+        
+        elif choice == '2':
+            print("\n--- Student Grades Management ---")
+            student_manager = StudentGrades()
+            student_manager.menu()
+        
+        elif choice == '3':
+            print("\n--- Write to File ---")
+            write_to_file()
+        
+        elif choice == '4':
+            print("\n--- Read from File ---")
+            read_from_file()
+            read_multiple_lines()
+        
+        elif choice == '5':
+            print("Thank you for using the program. Goodbye!")
+            break
+        
+        else:
+            print("Invalid choice! Please enter 1-5.")
+
+if __name__ == "__main__":
+    main()
