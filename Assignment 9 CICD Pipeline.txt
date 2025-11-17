@@ -1,0 +1,152 @@
+#!/bin/bash
+
+# Update system
+echo "Updating system packages..."
+sudo yum update -y
+
+# Install Python 3.9
+echo "Installing Python 3.9..."
+sudo yum install -y python3.9 python3.9-pip
+
+# Install Node.js 18
+echo "Installing Node.js 18..."
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+
+# Install PM2 for process management
+echo "Installing PM2..."
+sudo npm install -g pm2
+
+# Install Git
+echo "Installing Git..."
+sudo yum install -y git
+
+# Install Nginx for reverse proxy (optional)
+echo "Installing Nginx..."
+sudo yum install -y nginx
+
+# Create application directory
+echo "Creating application directory..."
+sudo mkdir -p /opt/apps/backend
+sudo mkdir -p /opt/apps/frontend
+sudo chown -R ec2-user:ec2-user /opt/apps
+
+# Clone repositories (replace with your actual repos)
+echo "Cloning application repositories..."
+cd /opt/apps/backend
+git clone https://github.com/your-username/flask-backend.git .
+cd /opt/apps/frontend
+git clone https://github.com/your-username/express-frontend.git .
+
+# Install backend dependencies
+echo "Installing backend dependencies..."
+cd /opt/apps/backend
+pip3.9 install -r requirements.txt
+
+# Install frontend dependencies
+echo "Installing frontend dependencies..."
+cd /opt/apps/frontend
+npm install
+
+# Create systemd service files
+echo "Creating systemd services..."
+
+# Backend service
+sudo tee /etc/systemd/system/flask-backend.service > /dev/null <<EOF
+[Unit]
+Description=Flask Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/apps/backend
+Environment=FLASK_ENV=production
+ExecStart=/usr/bin/python3.9 app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Frontend service
+sudo tee /etc/systemd/system/express-frontend.service > /dev/null <<EOF
+[Unit]
+Description=Express Frontend Service
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/apps/frontend
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Configure Nginx as reverse proxy
+sudo tee /etc/nginx/conf.d/flask-express.conf > /dev/null <<EOF
+server {
+    listen 80;
+    server_name _;
+
+    # Frontend
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    # Backend API
+    location /api {
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    # Health checks
+    location /health {
+        proxy_pass http://localhost:3000/health;
+    }
+
+    location /api/health {
+        proxy_pass http://localhost:5000/health;
+    }
+}
+EOF
+
+# Start and enable services
+echo "Starting services..."
+sudo systemctl daemon-reload
+sudo systemctl enable flask-backend express-frontend nginx
+sudo systemctl start flask-backend express-frontend nginx
+
+# Configure firewall
+echo "Configuring firewall..."
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --reload
+
+# Alternative: Using PM2
+echo "Setting up PM2 startup..."
+pm2 start /opt/apps/backend/app.py --name "flask-backend" --interpreter python3.9
+pm2 start /opt/apps/frontend/server.js --name "express-frontend"
+pm2 save
+pm2 startup
+
+echo "Deployment completed successfully!"
+echo "Frontend URL: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+echo "Backend API: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)/api"
+echo "Health Check - Frontend: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)/health"
+echo "Health Check - Backend: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)/api/health"
