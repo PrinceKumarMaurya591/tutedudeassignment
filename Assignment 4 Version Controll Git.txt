@@ -1,0 +1,49 @@
+# Initial setup
+ssh-keygen -t ed25519 -C "your_email@example.com"
+cat ~/.ssh/id_ed25519.pub
+# Add this to GitHub SSH keys
+
+git clone git@github.com:your-username/flask-mongodb-app.git
+cd flask-mongodb-app
+
+# Task 1
+git checkout -b Tutedude
+# Add all project files
+git add .
+git commit -m "Initial Flask application with MongoDB"
+git checkout main
+git merge Tutedude
+git push origin main Tutedude
+
+# Task 2  
+git checkout -b Tutedude_new
+# Modify data.json
+git add data.json
+git commit -m "Update JSON data with new entries"
+git checkout main
+git merge Tutedude_new
+# Resolve conflicts if any
+git push origin main
+
+# Task 3
+git checkout -b master_1
+# Develop frontend, commit changes
+git checkout main
+git checkout -b master_2  
+# Develop backend, commit changes
+git checkout main
+git merge master_1
+git merge master_2
+git push origin main
+
+# Task 4
+git checkout master_1
+# Make three separate commits for form fields
+git log --oneline # Note commit hashes
+git reset --soft <item-id-only-commit-hash>
+git commit -m "To-Do form with Item ID only"
+git checkout main
+git merge master_1
+git checkout master_1
+git rebase main
+git push origin master_1 --force
