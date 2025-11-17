@@ -1,0 +1,96 @@
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+
+  backend "s3" {
+    bucket = "your-terraform-state-bucket"
+    key    = "part1-single-ec2/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+# Data source for AMI
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+}
+
+# Security Group
+resource "aws_security_group" "flask_express_sg" {
+  name        = "flask-express-single-sg"
+  description = "Security group for Flask and Express on single EC2"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "flask-express-single-sg"
+  }
+}
+
+# EC2 Instance
+resource "aws_instance" "flask_express_single" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.instance_type
+  vpc_security_group_ids = [aws_security_group.flask_express_sg.id]
+  key_name               = var.key_name
+  user_data              = filebase64("${path.module}/user-data.sh")
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name = "flask-express-single-instance"
+  }
+}
+
+# Elastic IP
+resource "aws_eip" "single_instance_eip" {
+  instance = aws_instance.flask_express_single.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "flask-express-single-eip"
+  }
+}
